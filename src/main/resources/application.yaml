@@ -1,10 +1,32 @@
-# example values
+server:
+  port: 8080
+
+spring:
+  datasource:
+    username: root
+    password: 6063
+    url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+
+jpa:
+  hibernate:
+    ddl-auto: none
+  show-sql: true
+  properties:
+    hibernate:
+
+liquibase:
+  enabled: true
+  change-log: classpath:db/changelog/db.changelog-master.yaml
+
+crawler:
+  userAgent: "HeliontSearchBot (+https://heliont.ru/bot.html)"
+  referrer: "https://www.google.com"
+  delayMinMs: 500
+  delayMaxMs: 5000
 
 indexing-settings:
   sites:
-    - url: https://www.lenta.ru
-      name: Лента.ру
-    - url: https://www.skillbox.ru
-      name: Skillbox
     - url: https://www.playback.ru
       name: PlayBack.Ru
+    - url: https://et-cetera.ru/
+      name: Et Cetera.ru

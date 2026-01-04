@@ -1,0 +1,187 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: HS
+      changes:
+        - createTable:
+            tableName: site
+            columns:
+              - column:
+                  name: id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: status
+                  type: ENUM('INDEXING', 'INDEXED', 'FAILED')
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status_time
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_error
+                  type: TEXT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: url
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: page
+            columns:
+              - column:
+                  name: id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: site_id
+                  type: INT
+                  constraints:
+                    nullable: false
+                    references: site(id)
+                    foreignKeyName: fk_page_site_id
+                    deleteCascade: true
+              - column:
+                  name: path
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: content
+                  type: MEDIUMTEXT
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: lemma
+            columns:
+              - column:
+                  name: id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: site_id
+                  type: INT
+                  constraints:
+                    nullable: false
+                    references: site(id)
+                    foreignKeyName: fk_lemma_site_id
+                    deleteCascade: true
+              - column:
+                  name: lemma
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: frequency
+                  type: INT
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: search_index
+            columns:
+              - column:
+                  name: id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: page_id
+                  type: INT
+                  constraints:
+                    nullable: false
+                    references: page(id)
+                    foreignKeyName: fk_search_index_page_id
+                    deleteCascade: true
+              - column:
+                  name: lemma_id
+                  type: INT
+                  constraints:
+                    nullable: false
+                    references: lemma(id)
+                    foreignKeyName: fk_search_index_lemma_id
+                    deleteCascade: true
+              - column:
+                  name: rank_index
+                  type: FLOAT
+                  constraints:
+                    nullable: false
+
+
+        - createIndex:
+            tableName: lemma
+            indexName: idx_lemma_lemma
+            columns:
+              - column:
+                  name: lemma
+
+        - createIndex:
+            tableName: lemma
+            indexName: idx_lemma_site_lemma
+            columns:
+              - column:
+                  name: site_id
+              - column:
+                  name: lemma
+
+        - createIndex:
+            tableName: search_index
+            indexName: idx_search_index_page
+            columns:
+              - column:
+                  name: page_id
+
+        - createIndex:
+            tableName: search_index
+            indexName: idx_search_index_lemma
+            columns:
+              - column:
+                  name: lemma_id
+
+
+  - changeSet:
+      id: 2
+      author: HS
+      dbms: mysql
+      changes:
+        - sql:
+            sql: CREATE INDEX idx_page_path ON page (path(255));
+
+  - changeSet:
+      id: 3
+      author: HS
+      dbms: mysql
+      changes:
+        - addUniqueConstraint:
+            tableName: lemma
+            constraintName: uk_lemma_site_lemma
+            columnNames: site_id, lemma
+            disabled: false
