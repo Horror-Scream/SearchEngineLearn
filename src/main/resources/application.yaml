@@ -3,9 +3,10 @@ server:
 
 spring:
   datasource:
-    username: root
+    username: postgres
     password: 6063
-    url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+    url: jdbc:postgresql://localhost:5432/search_engine
+    driver-class-name: org.postgresql.Driver
 
 jpa:
   hibernate:

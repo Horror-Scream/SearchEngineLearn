@@ -15,12 +15,12 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: status
-                  type: ENUM('INDEXING', 'INDEXED', 'FAILED')
+                  type: VARCHAR(20)
                   constraints:
                     nullable: false
               - column:
                   name: status_time
-                  type: DATETIME
+                  type: TIMESTAMP
                   constraints:
                     nullable: false
               - column:
@@ -70,7 +70,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: content
-                  type: MEDIUMTEXT
+                  type: TEXT
                   constraints:
                     nullable: false
 
@@ -173,7 +173,7 @@ databaseChangeLog:
       dbms: mysql
       changes:
         - sql:
-            sql: CREATE INDEX idx_page_path ON page (path(255));
+            sql: CREATE INDEX idx_page_path ON page (path);
 
   - changeSet:
       id: 3

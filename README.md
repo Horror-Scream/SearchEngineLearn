@@ -16,7 +16,7 @@
 
 - **Язык**: Java 17
 - **Фреймворк**: Spring Boot 2.7.1
-- **СУБД**: MySQL 8.0
+- **СУБД**: PostgreSQL
 - **Морфология**: Apache Lucene Morphology (`RussianLuceneMorphology`)
 - **Парсинг HTML**: Jsoup
 - **Управление зависимостями**: Maven
@@ -34,35 +34,35 @@
 Перед началом убедитесь, что у вас установлено:
 
 - ✅ **JDK 17** — [скачать](https://adoptium.net/temurin/releases/?version=17)
-- ✅ **MySQL 8.0+** — [скачать](https://dev.mysql.com/downloads/mysql/)
+- ✅ **PostgreSQL** — [скачать](https://www.postgresql.org/download/)
 - ✅ **Maven 3.6+** — (или используйте встроенный в IntelliJ IDEA / VS Code)
 - ✅ Любой текстовый редактор или IDE (рекомендуется **IntelliJ IDEA**)
 - ✅ Доступ в интернет (для загрузки зависимостей)
 
 ---
 
-### 2. Настройка базы данных MySQL
+### 2. Настройка базы данных PostgreSQL
 
-#### Шаг 1: Запустите MySQL сервер
+#### Шаг 1: Запустите PostgreSQL сервер
 
-Убедитесь, что сервер MySQL запущен на вашем компьютере.
+Убедитесь, что сервер PostgreSQL запущен на вашем компьютере.
 
 #### Шаг 2: Создайте базу данных и пользователя
 
-Подключитесь к MySQL через командную строку, phpMyAdmin, DBeaver или другую утилиту и выполните:
+Подключитесь к PostgreSQL через командную строку, DBeaver или другую утилиту и выполните:
 
 ```sql
-CREATE DATABASE search_engine CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE search_engine;
 ```
 
 #### 3. Настройка конфигурации приложения
-"Используйте root данные в application.yml."
+"Используйте postgres данные и ваш пароль в application.yml."
 ```yaml
-spring:
   datasource:
-    username: root
+    username: postgres
     password: password
-    url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+    url: jdbc:postgresql://localhost:5432/search_engine
+    driver-class-name: org.postgresql.Driver
 ```
 #### 4. Сборка и запуск проекта
 Через терминал:

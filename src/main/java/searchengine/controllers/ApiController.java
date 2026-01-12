@@ -1,89 +1,94 @@
 package searchengine.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import searchengine.dto.search.SearchRequest;
 import searchengine.dto.search.SearchResponse;
 import searchengine.dto.statistics.ResultResponse;
 import searchengine.dto.statistics.StatisticsResponse;
+import searchengine.exceptions.BadRequestException;
+import searchengine.exceptions.InternalServerErrorException;
 import searchengine.services.IndexingService;
 import searchengine.services.SearchService;
 import searchengine.services.StatisticsService;
 
+@Slf4j
 @RestController
 @RequestMapping("/api")
+@RequiredArgsConstructor
 public class ApiController {
 
     private final StatisticsService statisticsService;
     private final IndexingService indexingService;
     private final SearchService searchService;
 
-    @Autowired
-    public ApiController(StatisticsService statisticsService,
-                         IndexingService indexingService,
-                         SearchService searchService) {
-        this.statisticsService = statisticsService;
-        this.indexingService = indexingService;
-        this.searchService = searchService;
-    }
-
     @GetMapping("/statistics")
-    public ResponseEntity<StatisticsResponse> statistics() {
+    public StatisticsResponse statistics() {
         try {
-            return ResponseEntity.ok(statisticsService.getStatistics());
+            return statisticsService.getStatistics();
         } catch (Exception e) {
-            return handleInternalError(e, "Ошибка получения статистики");
+            log.error("Ошибка получения статистики", e);
+            throw new InternalServerErrorException("Ошибка получения статистики", e);
         }
     }
 
     @GetMapping("/startIndexing")
-    public ResponseEntity<ResultResponse> startIndexing() {
+    public ResultResponse startIndexing() {
         try {
-            return indexingService.startIndexing() ?
-                    ResponseEntity.ok(new ResultResponse(true)) :
-                    ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                            .body(new ResultResponse(false, "Индексация уже запущена"));
+            if (indexingService.startIndexing()) {
+                return new ResultResponse(true);
+            } else {
+                throw new BadRequestException("Индексация уже запущена");
+            }
+        } catch (BadRequestException e) {
+            throw e;
         } catch (Exception e) {
-            return handleInternalError(e, "Ошибка запуска индексации");
+            log.error("Ошибка запуска индексации",e);
+            throw new InternalServerErrorException("Ошибка запуска индексации");
         }
     }
 
     @GetMapping("/stopIndexing")
-    public ResponseEntity<ResultResponse> stopIndexing() {
+    public ResultResponse stopIndexing() {
         try {
-            return indexingService.stopIndexing() ?
-                    ResponseEntity.ok(new ResultResponse(true)) :
-                    ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                            .body(new ResultResponse(false, "Индексация не запущена"));
+            if (indexingService.stopIndexing()) {
+                return new ResultResponse(true);
+            } else {
+                throw new BadRequestException("Индексация не запущена");
+            }
+        } catch (BadRequestException e) {
+            throw e;
         } catch (Exception e) {
-            return handleInternalError(e, "Ошибка остановки индексации");
+            log.error("Ошибка остановки индексации",e);
+            throw new InternalServerErrorException("Ошибка остановки индексации");
         }
     }
 
     @PostMapping("/indexPage")
-    public ResponseEntity<ResultResponse> indexPage(@RequestParam String url) {
+    public ResultResponse indexPage(@RequestParam String url) {
         try {
             if (url == null || url.trim().isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new ResultResponse(false, "Не указан URL страницы"));
+                throw new BadRequestException("Не указан URL страницы");
             }
 
             String result = indexingService.indexSinglePage(url);
             if (result == null) {
-                return ResponseEntity.ok(new ResultResponse(true));
+                return new ResultResponse(true);
             } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new ResultResponse(false, result));
+                throw new BadRequestException(result);
             }
+        } catch (BadRequestException e) {
+            throw e;
         } catch (Exception e) {
-            return handleInternalError(e, "Ошибка индексации страницы");
+            log.error("Ошибка индексации страницы: {}",url,e);
+            throw new InternalServerErrorException("Ошибка индексации страницы",e);
         }
     }
 
     @GetMapping("/search")
-    public ResponseEntity<?> search(
+    public SearchResponse search(
             @RequestParam String query,
             @RequestParam(required = false) String site,
             @RequestParam(required = false, defaultValue = "0") int offset,
@@ -91,29 +96,41 @@ public class ApiController {
 
         try {
             if (query == null || query.trim().isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new ResultResponse(false, "Задан пустой поисковый запрос"));
+                throw new BadRequestException("Задан пустой поисковый запрос");
             }
 
             SearchRequest searchRequest = new SearchRequest(query, site, offset, limit);
             SearchResponse response = searchService.search(searchRequest);
 
             if (!response.isResult()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(response);
+                throw new BadRequestException(response.getError());
             }
 
-            return ResponseEntity.ok(response);
+            return response;
+        } catch (BadRequestException e) {
+            throw e;
         } catch (Exception e) {
-            return handleInternalError(e, "Ошибка выполнения поиска");
+            log.error("Ошибка выполнения поиска: {}", query, e);
+            throw new InternalServerErrorException("Ошибка выполнения поиска", e);
         }
     }
+    @ExceptionHandler(BadRequestException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResultResponse handleBadRequest(BadRequestException e) {
+        log.warn("Bad request: {}", e.getMessage());
+        return new ResultResponse(false, e.getMessage());
+    }
 
-    private <T> ResponseEntity<T> handleInternalError(Exception e, String message) {
-        System.err.println(message + ": " + e.getMessage());
-        e.printStackTrace();
-
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body((T) new ResultResponse(false, "Внутренняя ошибка сервера"));
+    @ExceptionHandler(InternalServerErrorException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ResultResponse handleInternalError(InternalServerErrorException e) {
+        log.error("Internal server error: {}", e.getMessage(), e.getCause());
+        return new ResultResponse(false, e.getMessage());
+    }
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ResultResponse handleAllExceptions(Exception e) {
+        log.error("Непредвиденная ошибка", e);
+        return new ResultResponse(false, "Внутренняя ошибка сервера");
     }
 }
